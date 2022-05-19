@@ -4,6 +4,7 @@ import (
 	"debug/pe"
 	"errors"
 	"os"
+	"go.mozilla.org/pkcs7"
 )
 
 // ExtractDigitalSignature extracts a digital signature specified in a signed PE file.
