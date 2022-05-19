@@ -14,7 +14,8 @@ import (
 func main() {
 	inParam := flag.String("in", "filename", "This specifies the input Signed PE filename to read from")
 	outParam := flag.String("out", "filename", "This specifies the output PKCS#7 filename to write to")
-
+	isVerificationRequired := flag.Bool("validate", false, "This specifies if the PKCS#7 signature of the file should be verfied")
+	
 	flag.Parse()
 	if *inParam == "filename" {
 		flag.PrintDefaults()
@@ -24,6 +25,13 @@ func main() {
 	buf, err := sigtool.ExtractDigitalSignature(*inParam)
 	if err != nil {
 		log.Fatal(err)
+	}
+	
+	if isVerificationRequired {
+		err = sigtool.IsValidDigitalSignature(*inParam)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if *outParam != "filename" {
