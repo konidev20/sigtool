@@ -41,3 +41,17 @@ func ExtractDigitalSignature(filePath string) (buf []byte, err error) {
 
 	return buf, nil
 }
+
+func IsValidDigitalSignature(filePath string) (err error) {
+	peExtract, err := ExtractDigitalSignature(filePath)
+	if err != nil {
+		return err
+	}
+
+	pc, err := pkcs7.Parse(peExtract)
+	if err != nil {
+		return err
+	}
+
+	return pc.Verify()
+}
