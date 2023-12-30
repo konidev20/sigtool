@@ -7,5 +7,5 @@ Adding and deleting digital signatures will be supported soon.
 ## Command Line Usage
 Example sigtool CLI usage:
 
-	go get github.com/doowon/sigtool
+	go get github.com/konidev20/sigtool
 	gosigtool test.exe
