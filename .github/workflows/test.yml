@@ -1,0 +1,278 @@
+name: Tests
+
+on:
+  # Automatic triggers
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  
+  # Manual trigger with access control
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of tests to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - unit-only
+        - integration-only
+      go_version:
+        description: 'Go version to test with'
+        required: false
+        default: '1.21'
+        type: string
+
+# Ensure only repository owners/collaborators can manually trigger
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  # Access control check for manual triggers
+  access-check:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if user has write access
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: user } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: context.actor
+            });
+            
+            const permission = user.permission;
+            console.log(`User ${context.actor} has ${permission} permission`);
+            
+            // Allow admin, maintain, write permissions (repository owners and collaborators)
+            if (!['admin', 'maintain', 'write'].includes(permission)) {
+              throw new Error(`Access denied. User ${context.actor} does not have sufficient permissions to trigger workflows manually.`);
+            }
+            
+            console.log("Access granted - user has sufficient permissions");
+
+  # Unit tests - fast, run on multiple Go versions and platforms
+  unit-tests:
+    needs: [access-check]
+    # Skip access-check dependency for automatic triggers
+    if: always() && (github.event_name != 'workflow_dispatch' || needs.access-check.result == 'success')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        go-version: ['1.21', '1.22']
+        # Reduce matrix for manual integration-only runs
+        exclude:
+          - os: ${{ github.event.inputs.test_type == 'integration-only' && 'windows-latest' || '' }}
+          - os: ${{ github.event.inputs.test_type == 'integration-only' && 'macos-latest' || '' }}
+          - go-version: ${{ github.event.inputs.test_type == 'integration-only' && '1.22' || '' }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ github.event.inputs.go_version || matrix.go-version }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ matrix.go-version }}-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Verify dependencies
+      run: go mod verify
+
+    - name: Run unit tests
+      if: github.event.inputs.test_type != 'integration-only'
+      run: |
+        go test -short -v -race -coverprofile=coverage.out ./...
+
+    - name: Generate coverage report
+      if: github.event.inputs.test_type != 'integration-only' && matrix.os == 'ubuntu-latest' && matrix.go-version == '1.21'
+      run: |
+        go tool cover -html=coverage.out -o coverage.html
+        go tool cover -func=coverage.out
+
+    - name: Upload coverage to Codecov
+      if: github.event.inputs.test_type != 'integration-only' && matrix.os == 'ubuntu-latest' && matrix.go-version == '1.21'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+
+    - name: Upload coverage artifacts
+      if: github.event.inputs.test_type != 'integration-only' && matrix.os == 'ubuntu-latest' && matrix.go-version == '1.21'
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: |
+          coverage.out
+          coverage.html
+
+  # Integration tests - slower, fewer combinations but with real PE files
+  integration-tests:
+    needs: [access-check]
+    # Skip access-check dependency for automatic triggers
+    if: always() && (github.event_name != 'workflow_dispatch' || needs.access-check.result == 'success')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # Test on fewer platforms for integration tests to save resources
+        os: [ubuntu-latest, windows-latest]
+        go-version: ['1.21']
+        # Only run on ubuntu for unit-only mode
+        exclude:
+          - os: ${{ github.event.inputs.test_type == 'unit-only' && 'windows-latest' || '' }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ github.event.inputs.go_version || matrix.go-version }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ matrix.go-version }}-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Setup integration test files
+      if: github.event.inputs.test_type != 'unit-only'
+      run: |
+        chmod +x scripts/setup-test-files.sh
+        ./scripts/setup-test-files.sh
+
+    - name: Run integration tests
+      if: github.event.inputs.test_type != 'unit-only'
+      run: |
+        go test -v -run Integration ./...
+
+    - name: Run integration benchmarks
+      if: github.event.inputs.test_type != 'unit-only' && matrix.os == 'ubuntu-latest'
+      run: |
+        go test -bench=BenchmarkIntegration -v ./...
+
+    - name: Upload test artifacts
+      if: github.event.inputs.test_type != 'unit-only'
+      uses: actions/upload-artifact@v3
+      with:
+        name: integration-test-files-${{ matrix.os }}
+        path: |
+          testdata/
+        retention-days: 7
+
+  # Linting and code quality
+  lint:
+    needs: [access-check]
+    if: always() && (github.event_name != 'workflow_dispatch' || needs.access-check.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=5m
+
+    - name: Run go vet
+      run: go vet ./...
+
+    - name: Run go fmt check
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "The following files are not formatted properly:"
+          gofmt -s -l .
+          exit 1
+        fi
+
+  # Build verification
+  build:
+    needs: [access-check]
+    if: always() && (github.event_name != 'workflow_dispatch' || needs.access-check.result == 'success')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        go-version: ['1.21']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Build CLI tool
+      run: |
+        go build -v -o gosigtool${{ matrix.os == 'windows-latest' && '.exe' || '' }} ./cmd/gosigtool
+
+    - name: Test built binary
+      run: |
+        ./gosigtool${{ matrix.os == 'windows-latest' && '.exe' || '' }} -h
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: gosigtool-${{ matrix.os }}
+        path: |
+          gosigtool*
+        retention-days: 30
+
+  # Summary job that depends on all other jobs
+  test-summary:
+    needs: [unit-tests, integration-tests, lint, build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check all jobs status
+      run: |
+        echo "Unit tests: ${{ needs.unit-tests.result }}"
+        echo "Integration tests: ${{ needs.integration-tests.result }}"
+        echo "Lint: ${{ needs.lint.result }}"
+        echo "Build: ${{ needs.build.result }}"
+        
+        # Fail if any required job failed
+        if [[ "${{ needs.unit-tests.result }}" == "failure" || 
+              "${{ needs.integration-tests.result }}" == "failure" || 
+              "${{ needs.lint.result }}" == "failure" || 
+              "${{ needs.build.result }}" == "failure" ]]; then
+          echo "❌ One or more jobs failed"
+          exit 1
+        else
+          echo "✅ All jobs passed successfully"
+        fi

@@ -1,0 +1,66 @@
+run:
+  timeout: 5m
+  go: '1.21'
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - revive
+    - gosec
+    - gocritic
+    - gocyclo
+    - unparam
+    - unconvert
+    - prealloc
+    - copyloopvar
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  
+  gosec:
+    severity: medium
+    confidence: medium
+    
+  gocyclo:
+    min-complexity: 15
+    
+  revive:
+    rules:
+      - name: exported
+        disabled: false
+      - name: var-naming
+        disabled: false
+      - name: package-comments
+        disabled: true # Allow packages without comments for now
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gosec
+        - gocyclo
+        - errcheck
+    
+    # Exclude integration test file size limits
+    - path: integration_test\.go
+      linters:
+        - gocyclo
+  
+  # Maximum issues count per one linter
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+severity:
+  default-severity: error

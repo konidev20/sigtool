@@ -18,12 +18,12 @@ func TestIntegration_RealPEFile(t *testing.T) {
 		"C:\\Windows\\System32\\notepad.exe",
 		"C:\\Windows\\System32\\calc.exe",
 		"C:\\Windows\\System32\\cmd.exe",
-		
+
 		// Relative paths for test files that might be provided
 		"testdata/signed.exe",
 		"testdata/notepad.exe",
 		"test_files/signed.exe",
-		
+
 		// Environment variable for custom test file
 		os.Getenv("SIGTOOL_TEST_PE_FILE"),
 	}
@@ -86,8 +86,8 @@ func TestIntegration_RealPEFile(t *testing.T) {
 		// Save to temporary file
 		tmpDir := t.TempDir()
 		outputFile := filepath.Join(tmpDir, "extracted_signature.pkcs7")
-		
-		err = os.WriteFile(outputFile, signature, 0644)
+
+		err = os.WriteFile(outputFile, signature, 0600)
 		if err != nil {
 			t.Fatalf("Failed to write signature to file: %v", err)
 		}
@@ -152,7 +152,7 @@ func TestIntegration_UnsignedPEFile(t *testing.T) {
 // createSimpleUnsignedPE creates a minimal unsigned PE file for testing
 func createSimpleUnsignedPE(t *testing.T) string {
 	t.Helper()
-	
+
 	// Use our existing mock PE file generator without signature
 	return createMockPEFile(t, false, nil)
 }
@@ -166,7 +166,7 @@ func BenchmarkIntegration_RealPEFile(b *testing.B) {
 			"C:\\Windows\\System32\\notepad.exe",
 			"testdata/signed.exe",
 		}
-		
+
 		for _, file := range commonFiles {
 			if _, err := os.Stat(file); err == nil {
 				testFile = file

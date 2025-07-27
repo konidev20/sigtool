@@ -4,9 +4,9 @@ import (
 	"debug/pe"
 	"errors"
 	"fmt"
+	"go.mozilla.org/pkcs7"
 	"os"
 	"strings"
-	"go.mozilla.org/pkcs7"
 )
 
 const (
@@ -71,7 +71,7 @@ func ExtractDigitalSignature(filePath string) (buf []byte, err error) {
 	// Calculate actual signature data size (excluding 8-byte header)
 	signatureDataSize := size - SecurityDirHeaderSize
 	signatureOffset := int64(vAddr + SecurityDirHeaderSize)
-	
+
 	if signatureOffset < 0 || signatureOffset >= fileSize {
 		return nil, fmt.Errorf("invalid signature offset %d in file of size %d", signatureOffset, fileSize)
 	}
