@@ -98,6 +98,34 @@ To set up integration tests:
 go test -v -run Integration     # Run integration tests
 ```
 
+## CI/CD Pipeline
+
+The project uses GitHub Actions for automated testing and quality assurance:
+
+### Automatic Triggers
+- **Push to master**: Runs full test suite on all supported platforms
+- **Pull requests**: Validates changes before merging
+
+### Manual Triggers (Repository Owners/Collaborators Only)
+- **Workflow Dispatch**: Manual execution with options for test type and Go version
+- **Access Control**: Only users with write/admin/maintain permissions can trigger manually
+
+### Test Matrix
+- **Platforms**: Ubuntu, Windows, macOS
+- **Go Versions**: 1.21, 1.22
+- **Test Types**: Unit tests (fast), Integration tests (with real PE files)
+
+### Quality Gates
+- **Unit Tests**: Fast tests with race detection and coverage
+- **Integration Tests**: Real PE file testing with benchmarks
+- **Linting**: golangci-lint, go vet, gofmt, security scanning
+- **Build Verification**: Cross-platform binary builds
+
+### Coverage and Artifacts
+- **Code Coverage**: Uploaded to Codecov
+- **Build Artifacts**: Binaries for all platforms (30-day retention)
+- **Test Files**: Integration test files (7-day retention)
+
 ## Dependencies
 
 - `go.mozilla.org/pkcs7 v0.9.0`: For PKCS#7 signature parsing and verification
