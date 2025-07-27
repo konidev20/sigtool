@@ -22,11 +22,14 @@ go install ./cmd/gosigtool
 
 ### Testing
 ```bash
-# Run tests
-go test ./...
-
-# Run tests with verbose output
+# Run all tests (unit + integration)
 go test -v ./...
+
+# Run only unit tests (fast)
+go test -short -v ./...
+
+# Run only integration tests
+go test -v -run Integration
 
 # Run tests with benchmarks
 go test -bench=. -v
@@ -34,8 +37,11 @@ go test -bench=. -v
 # Run tests with coverage
 go test -cover ./...
 
-# Run specific test
-go test -run TestExtractDigitalSignature_ValidSignedPE -v
+# Setup integration test files
+./scripts/setup-test-files.sh
+
+# Run with custom PE file
+SIGTOOL_TEST_PE_FILE=/path/to/signed.exe go test -v -run Integration
 ```
 
 ### Dependency Management
@@ -70,14 +76,27 @@ The project consists of two main components:
 
 ## Testing
 
-The project includes comprehensive unit tests covering:
+The project includes comprehensive testing at multiple levels:
 
+### Unit Tests
 - **Happy path scenarios**: Valid signed PE files with proper signature extraction
 - **Error conditions**: Empty file paths, non-existent files, unsigned PE files, corrupted data
 - **Edge cases**: Oversized signatures, malformed PE files, bounds checking
 - **Security validation**: PKCS#7 signature parsing and verification testing
+- Uses mock PE file generation to create minimal but valid PE structures
 
-Test files use mock PE file generation to create minimal but valid PE structures for testing without requiring real signed executables.
+### Integration Tests
+- **Real PE file testing**: Tests against actual signed executables
+- **Automatic test file setup**: Downloads known good test files via `scripts/setup-test-files.sh`
+- **Multiple file sources**: Supports Windows system files, environment variables, or custom files
+- **CI/CD friendly**: Gracefully skips when no test files available
+- **Benchmark testing**: Performance testing with real-world files
+
+To set up integration tests:
+```bash
+./scripts/setup-test-files.sh  # Downloads a sample signed PE file
+go test -v -run Integration     # Run integration tests
+```
 
 ## Dependencies
 
