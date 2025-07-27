@@ -27,6 +27,15 @@ go test ./...
 
 # Run tests with verbose output
 go test -v ./...
+
+# Run tests with benchmarks
+go test -bench=. -v
+
+# Run tests with coverage
+go test -cover ./...
+
+# Run specific test
+go test -run TestExtractDigitalSignature_ValidSignedPE -v
 ```
 
 ### Dependency Management
@@ -58,6 +67,17 @@ The project consists of two main components:
 - Reads signature data from the file offset specified in the security directory (skipping 8-byte header)
 - Relies on `go.mozilla.org/pkcs7` for signature parsing and verification
 - Default output naming: `<input_filename>.pkcs7`
+
+## Testing
+
+The project includes comprehensive unit tests covering:
+
+- **Happy path scenarios**: Valid signed PE files with proper signature extraction
+- **Error conditions**: Empty file paths, non-existent files, unsigned PE files, corrupted data
+- **Edge cases**: Oversized signatures, malformed PE files, bounds checking
+- **Security validation**: PKCS#7 signature parsing and verification testing
+
+Test files use mock PE file generation to create minimal but valid PE structures for testing without requiring real signed executables.
 
 ## Dependencies
 
