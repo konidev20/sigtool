@@ -1,4 +1,2 @@
-github.com/doowon/sigtool v0.0.0-20190515184843-8f9a52684d75 h1:0iwk+iT3Gp5T04V60lHc87+6PsXlsvWPdGmyGM2LdKo=
-github.com/doowon/sigtool v0.0.0-20190515184843-8f9a52684d75/go.mod h1:EoAsK4aoETJ3R9e1+ahuHuxxos+JRpX1kDFnfCCWf8A=
-go.mozilla.org/pkcs7 v0.0.0-20210826202110-33d05740a352 h1:CCriYyAfq1Br1aIYettdHZTy8mBTIPo7We18TuO/bak=
-go.mozilla.org/pkcs7 v0.0.0-20210826202110-33d05740a352/go.mod h1:SNgMg+EgDFwmvSmLRTNKC5fegJjB7v23qTQ0XLGUNHk=
+go.mozilla.org/pkcs7 v0.9.0 h1:yM4/HS9dYv7ri2biPtxt8ikvB37a980dg69/pKmS+eI=
+go.mozilla.org/pkcs7 v0.9.0/go.mod h1:SNgMg+EgDFwmvSmLRTNKC5fegJjB7v23qTQ0XLGUNHk=
