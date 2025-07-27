@@ -68,23 +68,26 @@ func ExtractDigitalSignature(filePath string) (buf []byte, err error) {
 		return nil, fmt.Errorf("signature size %d exceeds maximum allowed size %d", size, MaxSignatureSize)
 	}
 
+	// Calculate actual signature data size (excluding 8-byte header)
+	signatureDataSize := size - SecurityDirHeaderSize
 	signatureOffset := int64(vAddr + SecurityDirHeaderSize)
+	
 	if signatureOffset < 0 || signatureOffset >= fileSize {
 		return nil, fmt.Errorf("invalid signature offset %d in file of size %d", signatureOffset, fileSize)
 	}
 
-	if signatureOffset+int64(size) > fileSize {
+	if signatureOffset+int64(signatureDataSize) > fileSize {
 		return nil, fmt.Errorf("signature extends beyond file bounds")
 	}
 
-	// Read signature data
-	buf = make([]byte, size)
+	// Read signature data (excluding the 8-byte security directory header)
+	buf = make([]byte, signatureDataSize)
 	n, err := f.ReadAt(buf, signatureOffset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read signature data: %w", err)
 	}
-	if n != int(size) {
-		return nil, fmt.Errorf("incomplete read: expected %d bytes, got %d", size, n)
+	if n != int(signatureDataSize) {
+		return nil, fmt.Errorf("incomplete read: expected %d bytes, got %d", signatureDataSize, n)
 	}
 
 	return buf, nil
