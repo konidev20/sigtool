@@ -78,10 +78,10 @@ workflow_dispatch:
 
 ### 4. Linting & Code Quality
 - **Tools**:
-  - `golangci-lint` (comprehensive Go linting)
+  - `golangci-lint` (comprehensive Go linting) - v6
   - `go vet` (Go static analysis)
   - `gofmt` (code formatting)
-  - `gosec` (security scanning)
+  - `gosec` (security scanning) - latest via direct installation
 - **Configuration**: `.golangci.yml`
 
 ### 5. Build Verification
@@ -187,6 +187,24 @@ Security policy covering:
 3. **Security Scanning**: Multiple tools (gosec, golangci-lint)
 4. **Artifact Management**: Controlled retention periods
 5. **Secrets**: No secrets required for current workflow
+
+## Latest GitHub Actions Versions (2024)
+
+The workflow uses the most current versions of GitHub Actions to avoid deprecation issues and gain performance improvements:
+
+1. **actions/checkout@v4** - Latest stable version
+2. **actions/setup-go@v5** - Built-in caching enabled, faster setup
+3. **actions/upload-artifact@v4** - Significant performance improvements (up to 90% faster)
+4. **codecov/codecov-action@v5** - Latest features with faster updates via Codecov Wrapper
+5. **actions/github-script@v7** - Updated to Node 20 runtime
+6. **golangci/golangci-lint-action@v6** - Latest version with golangci-lint v2 support
+
+### Performance Improvements
+
+- **Caching**: setup-go v5 includes automatic module and build caching
+- **Upload Speed**: artifact actions v4 provides up to 90% upload speed improvement
+- **No Manual Cache**: Removed explicit cache actions since setup-go handles it automatically
+- **Security**: Direct gosec installation ensures latest security scanning capabilities
 
 ## Best Practices
 
