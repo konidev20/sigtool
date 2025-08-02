@@ -1,3 +1,30 @@
+// Package sigtool provides functionality for extracting and validating digital signatures
+// from Windows PE (Portable Executable) files.
+//
+// This package supports reading PKCS#7 signatures embedded in PE files and performing
+// cryptographic validation of those signatures. It is designed for defensive security
+// analysis and forensic examination of signed executables.
+//
+// Key features:
+//   - Extract PKCS#7 digital signatures from signed PE files
+//   - Validate signatures using certificate chain verification
+//   - Cross-platform support (Windows, Linux, macOS)
+//   - Comprehensive error handling and input validation
+//   - Security-focused design with bounds checking
+//
+// Example usage:
+//
+//	// Extract a signature
+//	signature, err := sigtool.ExtractDigitalSignature("signed.exe")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	// Validate the signature
+//	err = sigtool.IsValidDigitalSignature("signed.exe")
+//	if err != nil {
+//	    fmt.Printf("Validation failed: %v\n", err)
+//	}
 package sigtool
 
 import (
@@ -17,8 +44,32 @@ const (
 	MaxSignatureSize = 10 * 1024 * 1024
 )
 
-// ExtractDigitalSignature extracts a digital signature specified in a signed PE file.
-// It returns a digital signature (pkcs#7) in bytes.
+// ExtractDigitalSignature extracts the PKCS#7 digital signature from a signed PE file.
+//
+// This function parses the PE file structure and locates the security directory
+// containing the digital signature. It performs comprehensive validation including
+// bounds checking and file integrity verification.
+//
+// Parameters:
+//   - filePath: The path to the PE file to extract the signature from
+//
+// Returns:
+//   - []byte: The raw PKCS#7 signature data
+//   - error: An error if extraction fails for any reason
+//
+// Common errors include:
+//   - File not found or inaccessible
+//   - Invalid PE file format
+//   - File is not digitally signed
+//   - Signature data is corrupted or extends beyond file bounds
+//
+// Example usage:
+//
+//	signature, err := sigtool.ExtractDigitalSignature("signed.exe")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	fmt.Printf("Extracted %d bytes of signature data\n", len(signature))
 func ExtractDigitalSignature(filePath string) (buf []byte, err error) {
 	// Input validation
 	if strings.TrimSpace(filePath) == "" {
@@ -95,6 +146,33 @@ func ExtractDigitalSignature(filePath string) (buf []byte, err error) {
 	return buf, nil
 }
 
+// IsValidDigitalSignature validates the digital signature of a PE file using PKCS#7 verification.
+//
+// This function extracts the signature from the PE file and performs cryptographic
+// verification including certificate chain validation. Note that validation may fail
+// even for properly formatted signatures due to certificate trust issues.
+//
+// Parameters:
+//   - filePath: The path to the PE file to validate
+//
+// Returns:
+//   - error: nil if the signature is valid, otherwise an error describing the validation failure
+//
+// Common validation failures:
+//   - Expired certificates
+//   - Missing or untrusted root certificates
+//   - Revoked certificates
+//   - Invalid signature format or corruption
+//   - Certificate chain verification failures
+//
+// Example usage:
+//
+//	err := sigtool.IsValidDigitalSignature("signed.exe")
+//	if err != nil {
+//	    fmt.Printf("Signature validation failed: %v\n", err)
+//	} else {
+//	    fmt.Println("Signature is valid")
+//	}
 func IsValidDigitalSignature(filePath string) (err error) {
 	// Input validation
 	if strings.TrimSpace(filePath) == "" {
