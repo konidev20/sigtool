@@ -21,7 +21,7 @@ linters:
     - unparam
     - unconvert
     - prealloc
-    - copyloopvar
+    # - copyloopvar  # Disabled for Go 1.21, enabled automatically in Go 1.22+
 
 linters-settings:
   errcheck:

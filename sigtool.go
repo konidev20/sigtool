@@ -4,9 +4,10 @@ import (
 	"debug/pe"
 	"errors"
 	"fmt"
-	"go.mozilla.org/pkcs7"
 	"os"
 	"strings"
+
+	"go.mozilla.org/pkcs7"
 )
 
 const (
@@ -25,6 +26,7 @@ func ExtractDigitalSignature(filePath string) (buf []byte, err error) {
 	}
 
 	// Open file once and use for both PE parsing and signature extraction
+	// #nosec G304 - This tool is designed to read user-specified PE files
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file %q: %w", filePath, err)
