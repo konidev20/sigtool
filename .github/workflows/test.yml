@@ -90,11 +90,12 @@ jobs:
 
     - name: Run unit tests
       if: github.event.inputs.test_type != 'integration-only'
-      run: |
-        go test -short -v -race -coverprofile=coverage.out ./...
+      shell: bash
+      run: go test -short -v -race -coverprofile=coverage.out ./...
 
     - name: Generate coverage report
       if: github.event.inputs.test_type != 'integration-only' && matrix.os == 'ubuntu-latest' && matrix.go-version == '1.21'
+      shell: bash
       run: |
         go tool cover -html=coverage.out -o coverage.html
         go tool cover -func=coverage.out
@@ -146,19 +147,20 @@ jobs:
 
     - name: Setup integration test files
       if: github.event.inputs.test_type != 'unit-only'
+      shell: bash
       run: |
         chmod +x scripts/setup-test-files.sh
         ./scripts/setup-test-files.sh
 
     - name: Run integration tests
       if: github.event.inputs.test_type != 'unit-only'
-      run: |
-        go test -v -run Integration ./...
+      shell: bash
+      run: go test -v -run Integration ./...
 
     - name: Run integration benchmarks
       if: github.event.inputs.test_type != 'unit-only' && matrix.os == 'ubuntu-latest'
-      run: |
-        go test -bench=BenchmarkIntegration -v ./...
+      shell: bash
+      run: go test -bench=BenchmarkIntegration -v ./...
 
     - name: Upload test artifacts
       if: github.event.inputs.test_type != 'unit-only'
@@ -194,6 +196,7 @@ jobs:
       run: go vet ./...
 
     - name: Run go fmt check
+      shell: bash
       run: |
         if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
           echo "The following files are not formatted properly:"
@@ -227,12 +230,12 @@ jobs:
         cache: true
 
     - name: Build CLI tool
-      run: |
-        go build -v -o gosigtool${{ matrix.os == 'windows-latest' && '.exe' || '' }} ./cmd/gosigtool
+      shell: bash
+      run: go build -v -o gosigtool${{ matrix.os == 'windows-latest' && '.exe' || '' }} ./cmd/gosigtool
 
     - name: Test built binary
-      run: |
-        ./gosigtool${{ matrix.os == 'windows-latest' && '.exe' || '' }} -h
+      shell: bash
+      run: ./gosigtool${{ matrix.os == 'windows-latest' && '.exe' || '' }} -h
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4

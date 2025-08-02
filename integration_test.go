@@ -32,8 +32,13 @@ func TestIntegration_RealPEFile(t *testing.T) {
 	for _, file := range testFiles {
 		if file != "" {
 			if _, err := os.Stat(file); err == nil {
-				testFile = file
-				break
+				// Check if the file is actually digitally signed before using it
+				if _, err := ExtractDigitalSignature(file); err == nil {
+					testFile = file
+					break
+				}
+				// File exists but is not signed, continue searching
+				t.Logf("File %s exists but is not digitally signed, continuing search...", file)
 			}
 		}
 	}
@@ -169,8 +174,11 @@ func BenchmarkIntegration_RealPEFile(b *testing.B) {
 
 		for _, file := range commonFiles {
 			if _, err := os.Stat(file); err == nil {
-				testFile = file
-				break
+				// Check if the file is actually digitally signed before using it
+				if _, err := ExtractDigitalSignature(file); err == nil {
+					testFile = file
+					break
+				}
 			}
 		}
 	}
